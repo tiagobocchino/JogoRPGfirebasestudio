@@ -87,13 +87,31 @@ async def on_member_join(member):
         embed.set_thumbnail(url=member.display_avatar.url)
         await channel.send(content=f"O portal se abre para {member.mention}!", embed=embed)
 
-@bot.tree.command(name="setup", description="Configura a estrutura final do servidor de RPG")
+@bot.tree.command(name="setup", description="Limpa o servidor e configura a estrutura final do RPG")
 async def setup(interaction: discord.Interaction):
     if not interaction.user.guild_permissions.administrator:
         return await interaction.response.send_message("Você precisa ser administrador!", ephemeral=True)
     
     await interaction.response.defer(ephemeral=True)
     guild = interaction.guild
+
+    # --- 0. LIMPEZA PROFUNDA (Wipe) ---
+    print(f"Iniciando limpeza no servidor {guild.name}")
+    for category in guild.categories:
+        # Não apaga a categoria onde o comando foi dado para evitar erros de interação
+        if interaction.channel.category and category.id == interaction.channel.category.id:
+            continue
+        for channel in category.channels:
+            await channel.delete()
+        await category.delete()
+
+    # Apaga canais que estão fora de categorias (exceto o atual)
+    for channel in guild.channels:
+        if isinstance(channel, (discord.TextChannel, discord.VoiceChannel, discord.CategoryChannel)):
+            if channel.id == interaction.channel.id: continue
+            if channel.category: continue # Já tratado acima
+            try: await channel.delete()
+            except: pass
 
     # --- 1. COMECE AQUI E AJUDA ---
     cat_start = await guild.create_category("🚀 COMECE AQUI E AJUDA")

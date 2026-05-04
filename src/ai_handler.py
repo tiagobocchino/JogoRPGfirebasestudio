@@ -22,8 +22,13 @@ class AIService:
         except Exception as list_e:
             print(f"❌ Erro ao listar modelos: {list_e}")
 
-        # Tenta modelos em ordem de preferência
-        models_to_try = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"]
+        # Tenta modelos que vimos que estão disponíveis no seu log
+        models_to_try = [
+            "gemini-2.0-flash", 
+            "gemini-flash-latest", 
+            "gemini-pro-latest",
+            "gemini-1.5-flash"
+        ]
         self.model = None
         
         for m_name in models_to_try:

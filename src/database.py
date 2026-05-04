@@ -17,18 +17,20 @@ class DatabaseService:
         self.url = os.getenv("SUPABASE_URL", "").strip()
         if self.url.endswith("/rest/v1/"):
             self.url = self.url.replace("/rest/v1/", "")
-            
-        service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "").strip()
-        anon_key = os.getenv("SUPABASE_ANON_PUBLIC", "").strip()
-        generic_key = os.getenv("SUPABASE_KEY", "").strip()
 
+        service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "").strip()
+        generic_key = os.getenv("SUPABASE_KEY", "").strip()
+        anon_key = os.getenv("SUPABASE_ANON_PUBLIC", "").strip()
+
+        # Prioridade máxima para a Service Role Key para evitar 401 em operações de escrita/bypass RLS
         self.key = service_key or generic_key or anon_key
 
         # DIAGNÓSTICO SEGURO
         if self.url:
-            print(f"🔗 URL Detectada: {self.url[:20]}...")
+            print(f"🔗 URL Detectada: {self.url[:25]}...")
         if self.key:
-            print(f"🔑 Chave Detectada (Tamanho: {len(self.key)}): {self.key[:6]}...{self.key[-6:]}")
+            key_type = "SERVICE_ROLE" if (service_key and self.key == service_key) else "ANON/GENERIC"
+            print(f"🔑 Chave [{key_type}] (Tamanho: {len(self.key)}): {self.key[:6]}...{self.key[-6:]}")
         else:
             print("❌ Nenhuma chave Supabase encontrada!")
 

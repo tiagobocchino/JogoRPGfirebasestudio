@@ -8,48 +8,25 @@ load_dotenv(dotenv_path=env_path)
 
 class DatabaseService:
     def __init__(self):
-        url: str = os.getenv("SUPABASE_URL", "").strip()
-        # Limpa a URL caso ela tenha o sufixo /rest/v1/
-        if url.endswith("/rest/v1/"):
-            url = url.replace("/rest/v1/", "")
-        # DIAGNÓSTICO PROFUNDO
-        srv_name = os.getenv('RAILWAY_SERVICE_NAME', 'Desconhecido')
-        env_name = os.getenv('RAILWAY_ENVIRONMENT_NAME', 'Desconhecido')
-        print(f"🔍 ESTOU RODANDO NO SERVIÇO: {srv_name} | AMBIENTE: {env_name}")
-        print(f"DEBUG: Chaves detectadas: {', '.join(os.environ.keys())}")
-        
         # No Railway, as variáveis já vêm no os.environ. 
         if not os.getenv("SUPABASE_URL"):
             env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
             if os.path.exists(env_path):
                 load_dotenv(dotenv_path=env_path)
-                print("ℹ️ Carregando variáveis via arquivo .env")
-            else:
-                print("ℹ️ Arquivo .env não encontrado, usando variáveis de sistema.")
-        else:
-            print("ℹ️ Usando variáveis de ambiente do Sistema (Railway/Cloud)")
             
         self.url = os.getenv("SUPABASE_URL", "").strip()
         if self.url.endswith("/rest/v1/"):
             self.url = self.url.replace("/rest/v1/", "")
             
-        # Aceita múltiplos nomes para a chave para facilitar o deploy
         self.key: str = (
             os.getenv("SUPABASE_SERVICE_ROLE_KEY") or 
             os.getenv("SUPABASE_KEY") or 
             os.getenv("SUPABASE_ANON_PUBLIC", "")
         ).strip()
 
-        if not self.url:
-            print("❌ ERRO: Variável SUPABASE_URL não encontrada no ambiente!")
-        if not self.key:
-            print("❌ ERRO: Nenhuma chave Supabase (SERVICE_ROLE ou ANON) encontrada!")
-            
         if not self.url or not self.key:
-            print("👉 Verifique as 'Variables' no painel do Railway.")
             return
 
-        print(f"✅ Supabase configurado com URL: {self.url[:15]}...")
         self.supabase: Client = create_client(self.url, self.key)
 
     # --- Personagens ---

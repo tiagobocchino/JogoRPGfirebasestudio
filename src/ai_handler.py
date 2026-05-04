@@ -12,40 +12,53 @@ class AIService:
         if api_key:
             genai.configure(api_key=api_key)
         
-        # Carregar o System Prompt
         self.system_prompt = self._load_prompt()
         
-        # Tenta usar o flash, se der erro o bot avisará no log
-        try:
-            self.model = genai.GenerativeModel(
-                model_name="gemini-1.5-flash",
-                system_instruction=self.system_prompt
-            )
-            print("✨ Modelo Gemini 1.5 Flash inicializado.")
-        except Exception as e:
-            print(f"⚠️ Erro ao carregar 1.5 Flash, tentando gemini-pro: {e}")
-            self.model = genai.GenerativeModel(
-                model_name="gemini-pro",
-                system_instruction=self.system_prompt
-            )
+        # Tenta modelos em ordem de preferência
+        models_to_try = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"]
+        self.model = None
+        
+        for m_name in models_to_try:
+            try:
+                test_model = genai.GenerativeModel(
+                    model_name=m_name,
+                    system_instruction=self.system_prompt
+                )
+                # Não dá pra testar sem enviar mensagem, então vamos configurar o primeiro e torcer
+                self.model = test_model
+                self.current_model_name = m_name
+                print(f"✅ Modelo {m_name} pré-selecionado.")
+                break
+            except Exception as e:
+                print(f"❌ Falha ao configurar {m_name}: {e}")
 
     def _load_prompt(self):
         try:
-            # Tenta carregar o prompt do arquivo
             path = os.path.join(os.path.dirname(__file__), "gm_system_prompt.md")
-            with open(path, "r", encoding="utf-8") as f:
-                return f.read()
+            if os.path.exists(path):
+                with open(path, "r", encoding="utf-8") as f:
+                    return f.read()
+            return "Você é um Mestre de RPG medieval no Vale dos Ecos Perdidos."
         except Exception:
             return "Você é um Mestre de RPG medieval."
 
     async def generate_response(self, user_message: str, history: list = None):
-        """
-        Gera uma resposta baseada no histórico da sessão.
-        history format: [{"role": "user", "parts": ["..."]}, {"role": "model", "parts": ["..."]}]
-        """
-        chat = self.model.start_chat(history=history or [])
-        response = await chat.send_message_async(user_message)
-        return response.text
+        if not self.model:
+            return "Erro: O sistema de IA não foi configurado corretamente. Verifique sua chave API."
+
+        try:
+            chat = self.model.start_chat(history=history or [])
+            response = await chat.send_message_async(user_message)
+            return response.text
+        except Exception as e:
+            # Se o flash falhou no envio, tenta o pro como última chance
+            if "gemini-1.5" in self.current_model_name:
+                print(f"🔄 Erro no {self.current_model_name}, tentando fallback para gemini-pro...")
+                fallback_model = genai.GenerativeModel(model_name="gemini-pro")
+                chat = fallback_model.start_chat(history=history or [])
+                response = await chat.send_message_async(f"{self.system_prompt}\n\nUsuário: {user_message}")
+                return response.text
+            raise e
 
     def format_history_for_gemini(self, db_history: list):
         """Converte o formato do Supabase para o formato do Gemini"""

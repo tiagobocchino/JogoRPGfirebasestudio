@@ -28,11 +28,16 @@ class DatabaseService:
             os.getenv("SUPABASE_ANON_PUBLIC", "")
         ).strip()
 
+        if not self.url:
+            print("❌ ERRO: Variável SUPABASE_URL não encontrada no ambiente!")
+        if not self.key:
+            print("❌ ERRO: Nenhuma chave Supabase (SERVICE_ROLE ou ANON) encontrada!")
+            
         if not self.url or not self.key:
-            print("❌ ERRO CRÍTICO: SUPABASE_URL ou SUPABASE_KEY não encontradas!")
-            print("Verifique as 'Variables' no painel do Railway.")
+            print("👉 Verifique as 'Variables' no painel do Railway.")
             return
 
+        print(f"✅ Supabase configurado com URL: {self.url[:15]}...")
         self.supabase: Client = create_client(self.url, self.key)
 
     # --- Personagens ---

@@ -53,6 +53,19 @@ async def ficha(interaction: discord.Interaction):
             await inter.response.send_message(embed=view.generate_embed(), view=view, ephemeral=True)
         await interaction.response.send_modal(CharacterCreationModal(modal_callback))
 
+class InviteView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="Gerar Convite 🎟️", style=discord.ButtonStyle.success, custom_id="generate_invite")
+    async def generate_invite(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # Cria um convite válido por 24h para até 5 usos
+        invite = await interaction.channel.create_invite(max_age=86400, max_uses=5, unique=True)
+        await interaction.response.send_message(
+            f"⚔️ **O Vale precisa de heróis!**\nAqui está o seu convite exclusivo para enviar aos seus aliados:\n{invite.url}\n\n*Válido por 24h para até 5 pessoas.*", 
+            ephemeral=True
+        )
+
 @bot.tree.command(name="setup", description="Configura automaticamente os canais do RPG no servidor")
 async def setup(interaction: discord.Interaction):
     if not interaction.user.guild_permissions.administrator:
@@ -61,21 +74,49 @@ async def setup(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
     guild = interaction.guild
     
-    # 1. Criar Categoria
-    category = await guild.create_category("🏰 CRÔNICAS DO VALE")
+    # --- 1. CATEGORIA: CRÔNICAS DO VALE ---
+    cat_rpg = await guild.create_category("🏰 CRÔNICAS DO VALE")
     
-    # 2. Criar Canais
-    lobby = await guild.create_text_channel("🌟-lobby-de-entrada", category=category)
-    music = await guild.create_text_channel("🎵-musica-ambiente", category=category)
-    admin = await guild.create_text_channel("📜-administracao-e-ficha", category=category)
-    mesa = await guild.create_text_channel("⚔️-mesa-testes", category=category)
+    # Salas de Aventura (Mestre IA responde aqui)
+    lore = await guild.create_text_channel("📜-lore-e-mitologia", category=cat_rpg)
+    mesa_geral = await guild.create_text_channel("⚔️-mesa-geral", category=cat_rpg)
+    mesa_lamparina = await guild.create_text_channel("🕯️-ordem-da-lamparina", category=cat_rpg)
+    mesa_ferro = await guild.create_text_channel("⚒️-sindicato-do-ferro", category=cat_rpg)
+    mesa_sussurros = await guild.create_text_channel("🌫️-os-sussurrantes", category=cat_rpg)
     
-    # 3. Mensagens Iniciais
-    await lobby.send(f"## Bem-vindo ao Vale, viajante!\nEste é o seu ponto de partida. Aguarde aqui outros heróis.\n\nUse `/ficha` em {admin.mention} para começar.")
-    await music.send(f"## Central de Som\nConecte-se a um canal de voz e use `/play [url]` para definir o clima da aventura.")
-    await admin.send(f"## Terminal de Fichas\nUse `/ficha` aqui para criar ou editar seu personagem.")
+    # --- 2. CATEGORIA: COMUNIDADE ---
+    cat_com = await guild.create_category("🤝 COMUNIDADE")
+    admin = await guild.create_text_channel("📜-fichas-e-regras", category=cat_com)
+    convites = await guild.create_text_channel("🎟️-convites", category=cat_com)
     
-    await interaction.followup.send("✅ Estrutura criada com sucesso!", ephemeral=True)
+    # --- 3. CONFIGURAÇÃO DE MENSAGENS INICIAIS ---
+    
+    # Mensagem de Lore
+    embed_lore = discord.Embed(
+        title="O Vale dos Ecos Perdidos",
+        description=(
+            "O mundo como conhecemos é apenas um eco de algo maior. "
+            "A **Névoa Cinzenta** consome tudo, mas nas ruínas dos ancestrais, heróis encontram poder.\n\n"
+            "Escolha seu caminho nas salas de aventura abaixo!"
+        ),
+        color=discord.Color.dark_purple()
+    )
+    await lore.send(embed=embed_lore)
+
+    # Mensagem de Convites
+    embed_invite = discord.Embed(
+        title="Traga seus Aliados",
+        description="Clique no botão abaixo para gerar um link de convite e fortalecer nossa irmandade no Vale!",
+        color=discord.Color.green()
+    )
+    await convites.send(embed=embed_invite, view=InviteView())
+
+    # Instrução de Fichas
+    await admin.send(
+        "## Terminal de Heróis\nUse o comando `/ficha` aqui para manifestar sua presença no Vale e criar sua ficha de personagem."
+    )
+    
+    await interaction.followup.send("✅ Mundo expandido com sucesso!", ephemeral=True)
 
 @bot.tree.command(name="play", description="Toca uma música no canal de voz")
 async def play(interaction: discord.Interaction, url: str):
@@ -100,7 +141,12 @@ async def on_message(message):
     if message.author == bot.user:
         return
 
-    if message.channel.name.startswith('mesa-'):
+    # O Mestre responde em qualquer canal das Crônicas ou que comece com 'mesa-'
+    is_rpg_channel = (
+        message.channel.category and message.channel.category.name == "🏰 CRÔNICAS DO VALE"
+    ) or message.channel.name.startswith('mesa-')
+
+    if is_rpg_channel and not message.content.startswith('!'):
         async with message.channel.typing():
             # 1. Obter ou Criar Sessão
             session = bot.db.get_or_create_session(str(message.channel.id), [str(message.author.id)])

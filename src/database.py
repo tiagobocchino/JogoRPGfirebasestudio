@@ -18,6 +18,9 @@ class DatabaseService:
             load_dotenv(dotenv_path=env_path)
             
         self.url: str = os.getenv("SUPABASE_URL", "").strip()
+        if self.url.endswith("/rest/v1/"):
+            self.url = self.url.replace("/rest/v1/", "")
+            
         # Aceita múltiplos nomes para a chave para facilitar o deploy
         self.key: str = (
             os.getenv("SUPABASE_SERVICE_ROLE_KEY") or 

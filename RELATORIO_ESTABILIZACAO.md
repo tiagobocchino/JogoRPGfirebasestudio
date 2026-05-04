@@ -24,12 +24,14 @@ Este documento resume as correções críticas aplicadas para garantir que o bot
 
 ## 🚧 Estado Atual e Próximos Passos
 
-### ⚠️ Bloqueio de Cota (Erro 429)
-- O bot agora consegue "falar" com o Google, mas atingiu o limite de requisições do plano gratuito (`ResourceExhausted`).
-- **Ação**: Aguardar o reset da cota (geralmente diário ou por minuto) ou verificar o painel do [Google AI Studio](https://aistudio.google.com/).
+### ⚠️ Bloqueio de Cota (Erro 429 - ResourceExhausted)
+- **Status**: O bot está 100% operacional, mas as requisições estão sendo barradas pelo Google por excesso de uso no plano gratuito.
+- **Modelos Testados**: `gemini-2.0-flash` e `gemini-2.0-flash-lite`. Ambos reportaram `limit: 0` ou cota excedida no momento.
+- **Descoberta Crítica**: A conexão via gRPC está funcionando perfeitamente, eliminando qualquer erro de rede ou autenticação.
 
 ### 📍 Próximo Objetivo:
-- Assim que a cota da IA estabilizar, executar o comando `/setup` no Discord para criar a estrutura final de categorias e canais.
+1. **Monitorar Cota**: Verificar no [Google AI Studio](https://aistudio.google.com/) se há algum alerta ou se é necessário criar uma nova chave API em um projeto diferente para resetar os limites.
+2. **Executar Setup**: Assim que a IA responder (pode ser amanhã após o reset diário), rodar `/setup` para finalizar a casa do Mestre.
 
 ---
-*Relatório gerado em 04/05/2026 às 00:45*
+*Relatório atualizado em 04/05/2026 às 00:52*

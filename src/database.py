@@ -12,8 +12,11 @@ class DatabaseService:
         # Limpa a URL caso ela tenha o sufixo /rest/v1/
         if url.endswith("/rest/v1/"):
             url = url.replace("/rest/v1/", "")
-        # DIAGNÓSTICO: Lista todas as chaves disponíveis (para a gente ver o que o Railway injetou)
-        print(f"DEBUG: Variáveis detectadas no sistema: {', '.join(os.environ.keys())}")
+        # DIAGNÓSTICO PROFUNDO
+        srv_name = os.getenv('RAILWAY_SERVICE_NAME', 'Desconhecido')
+        env_name = os.getenv('RAILWAY_ENVIRONMENT_NAME', 'Desconhecido')
+        print(f"🔍 ESTOU RODANDO NO SERVIÇO: {srv_name} | AMBIENTE: {env_name}")
+        print(f"DEBUG: Chaves detectadas: {', '.join(os.environ.keys())}")
         
         # No Railway, as variáveis já vêm no os.environ. 
         if not os.getenv("SUPABASE_URL"):

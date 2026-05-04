@@ -22,6 +22,7 @@ class RPG_Bot(commands.Bot):
     def __init__(self):
         intents = discord.Intents.default()
         intents.message_content = True
+        intents.members = True # Necessário para o on_member_join
         super().__init__(command_prefix="!", intents=intents)
         self.db = DatabaseService()
         self.ai = AIService()
@@ -66,6 +67,26 @@ class InviteView(discord.ui.View):
             ephemeral=True
         )
 
+@bot.event
+async def on_member_join(member):
+    # Procura pelo canal de boas-vindas no servidor
+    channel = discord.utils.get(member.guild.text_channels, name="🌟-portal-de-entrada")
+    if channel:
+        embed = discord.Embed(
+            title=f"⚔️ Bem-vindo ao Vale, {member.display_name}!",
+            description=(
+                "Sua jornada pelas **Crônicas do Vale** começa aqui.\n\n"
+                "**Como começar:**\n"
+                "1️⃣ Vá até o canal <#ID_FICHAS> e use o comando `/ficha` para manifestar sua alma e atributos.\n"
+                "2️⃣ Leia a mitologia em <#ID_LORE> para entender os perigos da Névoa.\n"
+                "3️⃣ Escolha uma mesa na categoria **CRÔNICAS** e comece a narrar sua ação!\n\n"
+                "*Que os Ecos te guiem...*"
+            ),
+            color=discord.Color.gold()
+        )
+        embed.set_thumbnail(url=member.display_avatar.url)
+        await channel.send(content=f"O portal se abre para {member.mention}!", embed=embed)
+
 @bot.tree.command(name="setup", description="Configura automaticamente os canais do RPG no servidor")
 async def setup(interaction: discord.Interaction):
     if not interaction.user.guild_permissions.administrator:
@@ -74,23 +95,33 @@ async def setup(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
     guild = interaction.guild
     
-    # --- 1. CATEGORIA: CRÔNICAS DO VALE ---
-    cat_rpg = await guild.create_category("🏰 CRÔNICAS DO VALE")
+    # --- 1. CATEGORIA: BOAS-VINDAS (NOVO) ---
+    cat_welcome = await guild.create_category("✨ NOVO POR AQUI?")
+    welcome_ch = await guild.create_text_channel("🌟-portal-de-entrada", category=cat_welcome)
     
-    # Salas de Aventura (Mestre IA responde aqui)
+    # --- 2. CATEGORIA: CRÔNICAS DO VALE ---
+    cat_rpg = await guild.create_category("🏰 CRÔNICAS DO VALE")
     lore = await guild.create_text_channel("📜-lore-e-mitologia", category=cat_rpg)
     mesa_geral = await guild.create_text_channel("⚔️-mesa-geral", category=cat_rpg)
     mesa_lamparina = await guild.create_text_channel("🕯️-ordem-da-lamparina", category=cat_rpg)
     mesa_ferro = await guild.create_text_channel("⚒️-sindicato-do-ferro", category=cat_rpg)
     mesa_sussurros = await guild.create_text_channel("🌫️-os-sussurrantes", category=cat_rpg)
     
-    # --- 2. CATEGORIA: COMUNIDADE ---
+    # --- 3. CATEGORIA: COMUNIDADE ---
     cat_com = await guild.create_category("🤝 COMUNIDADE")
     admin = await guild.create_text_channel("📜-fichas-e-regras", category=cat_com)
     convites = await guild.create_text_channel("🎟️-convites", category=cat_com)
     
-    # --- 3. CONFIGURAÇÃO DE MENSAGENS INICIAIS ---
+    # --- 4. MENSAGENS INICIAIS ---
     
+    # Boas-vindas fixas no portal
+    await welcome_ch.send(
+        "## 🌌 O Portal de Entrada\n"
+        "Seja bem-vindo ao servidor oficial de **Crônicas do Vale**.\n"
+        "Aqui, novos jogadores são recebidos e instruídos sobre como iniciar sua saga.\n\n"
+        "**Primeiro Passo:** Use `/ficha` no canal de fichas para começar!"
+    )
+
     # Mensagem de Lore
     embed_lore = discord.Embed(
         title="O Vale dos Ecos Perdidos",
@@ -113,10 +144,10 @@ async def setup(interaction: discord.Interaction):
 
     # Instrução de Fichas
     await admin.send(
-        "## Terminal de Heróis\nUse o comando `/ficha` aqui para manifestar sua presença no Vale e criar sua ficha de personagem."
+        f"## Terminal de Heróis\nUse o comando `/ficha` aqui para manifestar sua presença no Vale e criar sua ficha de personagem."
     )
     
-    await interaction.followup.send("✅ Mundo expandido com sucesso!", ephemeral=True)
+    await interaction.followup.send("✅ Onboarding e estrutura configurados!", ephemeral=True)
 
 @bot.tree.command(name="play", description="Toca uma música no canal de voz")
 async def play(interaction: discord.Interaction, url: str):

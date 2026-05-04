@@ -14,6 +14,14 @@ class AIService:
         
         self.system_prompt = self._load_prompt()
         
+        # DIAGNÓSTICO: Listar modelos disponíveis para esta chave
+        print("🔍 Consultando modelos disponíveis para sua chave API...")
+        try:
+            available_models = [m.name for m in genai.list_models()]
+            print(f"📋 Modelos encontrados: {available_models}")
+        except Exception as list_e:
+            print(f"❌ Erro ao listar modelos: {list_e}")
+
         # Tenta modelos em ordem de preferência
         models_to_try = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"]
         self.model = None

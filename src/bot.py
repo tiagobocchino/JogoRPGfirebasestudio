@@ -1,9 +1,13 @@
 import os
+import sys
 import discord
 from discord import app_commands
 from discord.ext import commands
 import random
 from dotenv import load_dotenv
+
+# Garante que a pasta 'src' está no path para o deploy
+sys.path.append(os.path.dirname(__file__))
 
 from database import DatabaseService
 from ai_handler import AIService

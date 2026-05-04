@@ -8,16 +8,26 @@ load_dotenv(dotenv_path=env_path)
 
 class AIService:
     def __init__(self):
-        api_key = os.getenv("GEMINI_API_KEY")
+        api_key = os.getenv("GEMINI_API_KEY", "").strip()
         if api_key:
             genai.configure(api_key=api_key)
         
         # Carregar o System Prompt
         self.system_prompt = self._load_prompt()
-        self.model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
-            system_instruction=self.system_prompt
-        )
+        
+        # Tenta usar o flash, se der erro o bot avisará no log
+        try:
+            self.model = genai.GenerativeModel(
+                model_name="gemini-1.5-flash",
+                system_instruction=self.system_prompt
+            )
+            print("✨ Modelo Gemini 1.5 Flash inicializado.")
+        except Exception as e:
+            print(f"⚠️ Erro ao carregar 1.5 Flash, tentando gemini-pro: {e}")
+            self.model = genai.GenerativeModel(
+                model_name="gemini-pro",
+                system_instruction=self.system_prompt
+            )
 
     def _load_prompt(self):
         try:

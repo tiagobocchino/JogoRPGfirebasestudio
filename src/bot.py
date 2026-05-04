@@ -226,7 +226,7 @@ async def on_message(message):
     await bot.process_commands(message)
 
 if __name__ == "__main__":
-    TOKEN = os.getenv('DISCORD_TOKEN')
+    TOKEN = os.getenv('DISCORD_TOKEN', '').strip()
     if TOKEN:
         bot.run(TOKEN)
     else:

@@ -12,16 +12,25 @@ class DatabaseService:
         # Limpa a URL caso ela tenha o sufixo /rest/v1/
         if url.endswith("/rest/v1/"):
             url = url.replace("/rest/v1/", "")
+        # Carrega variáveis de ambiente
+        env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
+        if os.path.exists(env_path):
+            load_dotenv(dotenv_path=env_path)
             
-        # Tenta pegar a chave de serviço primeiro (melhor para bots), 
-        # se não achar, tenta a anon ou a genérica
-        key: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or \
-                   os.getenv("SUPABASE_ANON_PUBLIC") or \
-                   os.getenv("SUPABASE_KEY", "")
+        self.url: str = os.getenv("SUPABASE_URL", "").strip()
+        # Aceita múltiplos nomes para a chave para facilitar o deploy
+        self.key: str = (
+            os.getenv("SUPABASE_SERVICE_ROLE_KEY") or 
+            os.getenv("SUPABASE_KEY") or 
+            os.getenv("SUPABASE_ANON_PUBLIC", "")
+        ).strip()
 
-        if not url or not key:
-            print("AVISO: SUPABASE_URL ou Chaves do Supabase não encontradas no .env")
-        self.supabase: Client = create_client(url, key)
+        if not self.url or not self.key:
+            print("❌ ERRO CRÍTICO: SUPABASE_URL ou SUPABASE_KEY não encontradas!")
+            print("Verifique as 'Variables' no painel do Railway.")
+            return
+
+        self.supabase: Client = create_client(self.url, self.key)
 
     # --- Personagens ---
     def create_character(self, player_id: str, char_data: dict):

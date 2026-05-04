@@ -12,12 +12,19 @@ class DatabaseService:
         # Limpa a URL caso ela tenha o sufixo /rest/v1/
         if url.endswith("/rest/v1/"):
             url = url.replace("/rest/v1/", "")
-        # Carrega variáveis de ambiente
-        env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
-        if os.path.exists(env_path):
-            load_dotenv(dotenv_path=env_path)
+        # No Railway, as variáveis já vêm no os.environ. 
+        # Só carregamos o .env se as variáveis essenciais NÃO existirem.
+        if not os.getenv("SUPABASE_URL"):
+            env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
+            if os.path.exists(env_path):
+                load_dotenv(dotenv_path=env_path)
+                print("ℹ️ Carregando variáveis via arquivo .env")
+            else:
+                print("ℹ️ Arquivo .env não encontrado, usando variáveis de sistema.")
+        else:
+            print("ℹ️ Usando variáveis de ambiente do Sistema (Railway/Cloud)")
             
-        self.url: str = os.getenv("SUPABASE_URL", "").strip()
+        self.url = os.getenv("SUPABASE_URL", "").strip()
         if self.url.endswith("/rest/v1/"):
             self.url = self.url.replace("/rest/v1/", "")
             

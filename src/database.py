@@ -18,11 +18,19 @@ class DatabaseService:
         if self.url.endswith("/rest/v1/"):
             self.url = self.url.replace("/rest/v1/", "")
             
-        self.key: str = (
-            os.getenv("SUPABASE_SERVICE_ROLE_KEY") or 
-            os.getenv("SUPABASE_KEY") or 
-            os.getenv("SUPABASE_ANON_PUBLIC", "")
-        ).strip()
+        service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "").strip()
+        anon_key = os.getenv("SUPABASE_ANON_PUBLIC", "").strip()
+        generic_key = os.getenv("SUPABASE_KEY", "").strip()
+
+        self.key = service_key or generic_key or anon_key
+
+        # DIAGNÓSTICO SEGURO
+        if self.url:
+            print(f"🔗 URL Detectada: {self.url[:20]}...")
+        if self.key:
+            print(f"🔑 Chave Detectada (Tamanho: {len(self.key)}): {self.key[:6]}...{self.key[-6:]}")
+        else:
+            print("❌ Nenhuma chave Supabase encontrada!")
 
         if not self.url or not self.key:
             return
